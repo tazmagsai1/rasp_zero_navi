@@ -1,0 +1,38 @@
+from smbus2 import SMBus
+import time
+
+# QMC5883L default I2C address
+QMC5883L_ADDRESS = 0x0D
+
+# QMC5883L register addresses
+QMC5883L_REG_OUT_X_LSB = 0x00
+QMC5883L_REG_OUT_X_MSB = 0x01
+QMC5883L_REG_OUT_Y_LSB = 0x02
+QMC5883L_REG_OUT_Y_MSB = 0x03
+QMC5883L_REG_OUT_Z_LSB = 0x04
+QMC5883L_REG_OUT_Z_MSB = 0x05
+QMC5883L_REG_STATUS = 0x06
+QMC5883L_REG_CONTROL_1 = 0x09
+QMC5883L_REG_CONTROL_2 = 0x0A
+
+def read_word(bus, addr, reg):
+    low = bus.read_byte_data(addr, reg)
+    high = bus.read_byte_data(addr, reg + 1)
+    val = (high << 8) + low
+    return val
+
+with SMBus(1) as bus:
+    # Initialize the sensor
+    bus.write_byte_data(QMC5883L_ADDRESS, QMC5883L_REG_CONTROL_1, 0x1D)
+    time.sleep(0.1)
+
+    while True:
+        try:
+            x = read_word(bus, QMC5883L_ADDRESS, QMC5883L_REG_OUT_X_LSB)
+            y = read_word(bus, QMC5883L_ADDRESS, QMC5883L_REG_OUT_Y_LSB)
+            z = read_word(bus, QMC5883L_ADDRESS, QMC5883L_REG_OUT_Z_LSB)
+            print(f"X: {x}, Y: {y}, Z: {z}")
+            time.sleep(1)
+        except OSError as e:
+            print("I2C communication error:", e)
+            break
